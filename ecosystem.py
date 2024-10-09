@@ -11,6 +11,8 @@ class River:
         self.animals = []
         self.population = 0
 
+        self.__pendingBabies = []
+
     def __str__(self):
         for i in self.river:
             for j in i:
@@ -45,13 +47,13 @@ class Animal:
         self.y = y
         self.bredToday = False
 
-    def death(self):
-        ...
+    def death(self, river):
+        river.animalDeath(self)
 
     def move(self):
         ...
 
-    def collision(self):
+    def collision(self, other):
         ...
 
 ###################################################
@@ -69,11 +71,16 @@ class Bear(Animal):
     def __str__(self):
         return self.icon
 
-    def starve(self):
-        ...
+    def starve(self, river):
+        if not self.eatenToday:
+            self.lives -= 1
 
-    def consume(self):
-        ...
+        if self.lives == 0:
+            self.death(river)
+
+    def consume(self, fish, river):
+        self.lives = self.maxLives
+        fish.death(river)
 
 ###################################################
 
