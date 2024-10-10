@@ -3,14 +3,31 @@
 # Bear Fish River
 
 from ecosystem import *
-import time, os
+import time, os, random
+
+DAYS_SIMULATED = 30
+RIVER_SIZE = 10
+START_BEARS = 10
+START_FISH = 10
 
 def main():
-    river = River(25, 2, 2)
-    print(river[(0, 0)])
+    river = River(RIVER_SIZE, START_BEARS, START_FISH)
+    #river.initialPopulation(5)
+    #print(river)
+    for i in range(10):
+        fish = Fish(random.randint(0, river.size - 1), random.randint(0, river.size - 1))
+        river.addBaby(fish)
+
+    river.placeBaby()
+    #print(river)
+    for fish in river.animals:
+        fish.move(river)
+    #print(river)
+
 
 if __name__ == '__main__':
-    main()
+    for i in range(1000000):
+        main()
 
 
 # BACKUP
