@@ -28,7 +28,7 @@ class River:
         """Indexing the river"""
         return self.river[x]
 
-    ############################################# MAKE PRIVATE AND RUN IN NEW DAY
+    #TODO MAKE PRIVATE AND RUN IN NEW DAY
     def __initialPopulation(self):
         """Place the initial population of bears and fish randomly in the river"""
         used = []
@@ -82,6 +82,7 @@ class River:
         """Main simulation functionality"""
         for animal in self.animals:
             animal.move(self)
+        self.placeBaby()
 
 ###################################################
 
@@ -93,85 +94,73 @@ class Animal:
         self.y = y
         self.bredToday = False
         self.icon = ''
-        self.maxLives = 0
 
     def death(self, river):
         """Calls the river animalDeath function and passes in the current object"""
         river.animalDeath(self)
 
-    def move(self, river):
-        print(river)
-        """Move the current animal to a new position"""
+    def __availableCoords(self, river):
         orignial = [(self.x - 1, self.y), (self.x + 1, self.y), (self.x, self.y - 1), (self.x, self.y + 1), (self.x - 1, self.y - 1), (self.x + 1, self.y + 1), (self.x - 1, self.y + 1), (self.x + 1, self.y - 1)]
         available = []
         for coords in orignial:
             try:
-                if coords[0] < 0 or coords[0] > river.size-1:
+                if coords[0] < 0 or coords[0] > river.size - 1:
                     continue
-                elif coords[1] < 0 or coords[1] > river.size-1:
+                elif coords[1] < 0 or coords[1] > river.size - 1:
                     continue
 
                 available.append(coords)
 
             except IndexError:
                 continue
+        
+        return available
+    
+    def move(self, river):
+        """Move the current animal to a new position"""
+        x, y = choice(self.__availableCoords(river))
 
-        ####################### FIX THE COLLISION OF ANIMALS WHEN THEY WANT TO MOVE SOMEWHERE
-        ####################### PUT ALL COLLISION LOGIC IN THE COLLISION FUNCTION
-        '''for coords in available:
-            if river[coords[1]][coords[0]] == '🐟':
-                fishObj = []
-                fish = 0
-                for i in range(coords[1]):
-                    for j in range(coords[0]):
-                        if river[i][j] == '🐟':
-                            fish += 1
+        if river[y][x] == '🟦':
+            river.redraw(self, self.x, self.y, (x, y))
 
-                for a in river.animals:
-                    if a.icon == '🐟':
-                        fish -= 1
-                        fishObj.append(a)
+        elif river[y][x] == self.icon and river[self.y][self.x] == self.icon:
+            self.collision(river, (x, y), self.icon)
 
-                        if fish == 0:
-                            break
-
-                self.collision(river, other=fishObj[-1])
-
-            else:
-                self.collision(river, otherIcon='🐻')
-
-            river.redraw(self, self.x, self.y, coords)'''
+        elif river[y][x] == self.icon and river[self.y][self.x] != self.icon:
+            self.collision(river, (x, y), '🐻🐟')
 
 
-    def collision(self, river, other=None, otherIcon=''):
-        """Detect collision between Bears and Fish and same sex animals"""
-        if self.icon == otherIcon:
-            orignial = [(self.x - 1, self.y), (self.x + 1, self.y), (self.x, self.y - 1), (self.x, self.y + 1), (self.x - 1, self.y - 1), (self.x + 1, self.y + 1), (self.x - 1, self.y + 1), (self.x + 1, self.y - 1)]
-            available = []
-            for coords in orignial:
-                try:
-                    if coords[0] < 0 or coords[0] > river.size - 1:
-                        continue
-                    elif coords[1] < 0 or coords[1] > river.size - 1:
-                        continue
+    def collision(self, river, otherCoords, mode):
+        """Detect collision between Bears and Fish and same animals"""
+        if mode == '🐻':
+            bearObjs = []
+            for pair in [(self.y, self.x), (otherCoords[1], otherCoords[0])]:
+                print([i for i in river.animals if i.icon == mode and i.y == pair[0] and i.x == pair[1]])
+                bearObj = [i for i in river.animals if i.icon == mode and i.y == pair[0] and i.x == pair[1]][-1]
+                bearObjs.append(bearObj)
 
-                    if river[coords[1]][coords[0]] != '🟦':
-                        continue
-                    available.append(coords)
+            babyCoords1 = self.__availableCoords(river)
+            babyCoords1.extend(bearObjs[1].__availableCoords(river))
+            babyCoords = choice(list(set(babyCoords1)))
 
-                except IndexError:
-                    continue
+            river.addBaby(Bear(babyCoords[0], babyCoords[1], bearObjs[0].maxLives))
 
-            if len(available) != 0:
-                if self.icon == '🐻':
-                    coords = choice(available)
-                    river.addBaby(Bear(coords[0], coords[1], self.maxLives))
-                else:
-                    coords = choice(available)
-                    river.addBaby(Fish(coords[0], coords[1]))
+        elif mode == '🐟':
+            fishObjs = []
+            for pair in [(self.y, self.x), (otherCoords[1], otherCoords[0])]:
+                print([i for i in river.animals if i.icon == mode and i.y == pair[0] and i.x == pair[1]])
+                fishObj = [i for i in river.animals if i.icon == mode and i.y == pair[0] and i.x == pair[1]][-1]
+                fishObjs.append(fishObj)
+
+            babyCoords1 = self.__availableCoords(river)
+            babyCoords1.extend(fishObjs[1].__availableCoords(river))
+            babyCoords = choice(list(set(babyCoords1)))
+
+            river.addBaby(Fish(babyCoords[0], babyCoords[1]))
 
         else:
-            Bear.consume(self, other, river)
+            ...
+
 
 ###################################################
 
