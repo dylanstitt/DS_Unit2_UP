@@ -13,7 +13,6 @@ class River:
         self.population = 0
 
         self.__pendingBabies = []
-
         self.__initialPopulation()
 
     def __str__(self):
@@ -39,7 +38,7 @@ class River:
 
             used.append((x, y))
             bear = Bear(x, y, 5)
-            self.river[y][x] = bear.icon
+            self.river[y][x] = bear
             self.animals.append(bear)
 
         for i in range(self.numFish):
@@ -49,7 +48,7 @@ class River:
 
             used.append((x, y))
             fish = Fish(x, y)
-            self.river[y][x] = fish.icon
+            self.river[y][x] = fish
             self.animals.append(fish)
 
         self.population = len(self.animals)
@@ -61,7 +60,7 @@ class River:
         """Loop through __pendingBabies and place the all on the river"""
         for baby in self.__pendingBabies:
             self.animals.append(baby)
-            self.river[baby.y][baby.x] = baby.icon
+            self.river[baby.y][baby.x] = baby
 
         self.population = len(self.animals)
 
@@ -75,8 +74,11 @@ class River:
     def redraw(self, animal, currentX, currentY, newCoords):
         """Redraws the river to the correct display"""
 
-        self.river[newCoords[1]][newCoords[0]] = animal.icon
+        self.river[newCoords[1]][newCoords[0]] = animal
         self.river[currentY][currentX] = '🟦'
+
+        self.animals.remove(animal)
+        self.animals.append(animal)
 
     def newDay(self):
         """Main simulation functionality"""
@@ -123,20 +125,19 @@ class Animal:
         if river[y][x] == '🟦':
             river.redraw(self, self.x, self.y, (x, y))
 
-        elif river[y][x] == self.icon and river[self.y][self.x] == self.icon:
+        elif river[y][x].icon == self.icon and river[self.y][self.x] is self:
             self.collision(river, (x, y), self.icon)
 
-        elif river[y][x] == self.icon and river[self.y][self.x] != self.icon:
+        elif river[y][x].icon == self.icon and river[self.y][self.x] is not self:
             self.collision(river, (x, y), '🐻🐟')
 
-
+    #TODO FINISH BEAR AND FISH INTERACTION
     def collision(self, river, otherCoords, mode):
         """Detect collision between Bears and Fish and same animals"""
         if mode == '🐻':
             bearObjs = []
             for pair in [(self.y, self.x), (otherCoords[1], otherCoords[0])]:
-                print([i for i in river.animals if i.icon == mode and i.y == pair[0] and i.x == pair[1]])
-                bearObj = [i for i in river.animals if i.icon == mode and i.y == pair[0] and i.x == pair[1]][-1]
+                bearObj = [i for i in river.animals if i is river[pair[0]][pair[1]]][-1]
                 bearObjs.append(bearObj)
 
             babyCoords1 = self.__availableCoords(river)
@@ -148,8 +149,7 @@ class Animal:
         elif mode == '🐟':
             fishObjs = []
             for pair in [(self.y, self.x), (otherCoords[1], otherCoords[0])]:
-                print([i for i in river.animals if i.icon == mode and i.y == pair[0] and i.x == pair[1]])
-                fishObj = [i for i in river.animals if i.icon == mode and i.y == pair[0] and i.x == pair[1]][-1]
+                fishObj = [i for i in river.animals if i is river[pair[0]][pair[1]]][-1]
                 fishObjs.append(fishObj)
 
             babyCoords1 = self.__availableCoords(river)

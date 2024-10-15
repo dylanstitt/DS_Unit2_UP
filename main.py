@@ -27,10 +27,8 @@ def main():
         #print(r)
         day += 1
         #sleep()
-
-        if day == 5:
-            break
+        break
 
 if __name__ == "__main__":
-    #for i in range(10000): main()
+    for i in range(10000): main()
     main()
