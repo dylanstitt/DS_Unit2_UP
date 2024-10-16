@@ -2,16 +2,13 @@
 # Unit 2 Unit Project
 # Bear Fish River
 
-#TODO - Finish the newDay function for the simulation running and fix the collision logic
-#TODO - debug
-
 from ecosystem import *
 from time import sleep
 
 DAYS_SIMULATED = 30
 RIVER_SIZE = 10
-START_BEARS = 10
-START_FISH = 10
+START_BEARS = 5
+START_FISH = 5
 
 def main():
 
@@ -19,16 +16,15 @@ def main():
     day = 0
     done = False
     for day in range(DAYS_SIMULATED):
-        #print(f"\n\nDay: {day+1}")
-        #print(r)
-        #print(f"\nStarting Population: {r.population} animals")
+        print(f"\n\nDay: {day+1}")
+        print(r)
+        print(f"\nStarting Population: {r.population} animals")
         done = r.newDay()
-        #print(f"Ending Population: {r.population} animals")
-        #print(r)
+        print(f"Ending Population: {r.population} animals")
+        print(r)
         day += 1
         #sleep()
-        break
 
 if __name__ == "__main__":
-    for i in range(10000): main()
+    #for i in range(10000): main()
     main()

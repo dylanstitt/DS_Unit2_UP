@@ -1,4 +1,6 @@
 from random import randint, choice
+import os
+
 
 class River:
 
@@ -27,14 +29,13 @@ class River:
         """Indexing the river"""
         return self.river[x]
 
-    #TODO MAKE PRIVATE AND RUN IN NEW DAY
     def __initialPopulation(self):
         """Place the initial population of bears and fish randomly in the river"""
         used = []
         for i in range(self.numBears):
-            x, y = randint(0, self.size-1), randint(0, self.size-1)
+            x, y = randint(0, self.size - 1), randint(0, self.size - 1)
             while (x, y) in used:
-                x, y = randint(0, self.size-1), randint(0, self.size-1)
+                x, y = randint(0, self.size - 1), randint(0, self.size - 1)
 
             used.append((x, y))
             bear = Bear(x, y, 5)
@@ -54,9 +55,13 @@ class River:
         self.population = len(self.animals)
 
     def addBaby(self, baby):
+        if self.population >= self.size ** 2:
+            print("RIVER FULL")
+            exit()
+
         self.__pendingBabies.append(baby)
 
-    def placeBaby(self):
+    def placeBabies(self):
         """Loop through __pendingBabies and place the all on the river"""
         for baby in self.__pendingBabies:
             self.animals.append(baby)
@@ -64,27 +69,27 @@ class River:
 
         self.population = len(self.animals)
 
+    ################################################################################################## TODO FISH NOT IN THE ANIMALS LIST????
     def animalDeath(self, animal):
         """Kills and removes and animals from the river"""
         self.animals.remove(animal)
         self.population = len(self.animals)
+        print(f"☠️ ☠️ ☠️  A {str(animal)}  has died")
 
-        self.river[animal.y][animal.x] = '🟦'
-
-    def redraw(self, animal, currentX, currentY, newCoords):
+    def redraw(self, animal, new):
         """Redraws the river to the correct display"""
-
-        self.river[newCoords[1]][newCoords[0]] = animal
-        self.river[currentY][currentX] = '🟦'
-
-        self.animals.remove(animal)
-        self.animals.append(animal)
+        self.river[animal.y][animal.x] = '🟦'
+        self.river[new[1]][new[0]] = animal
 
     def newDay(self):
         """Main simulation functionality"""
         for animal in self.animals:
             animal.move(self)
-        self.placeBaby()
+
+            if animal.icon == '🐻':
+                animal.eatenToday = False
+        self.placeBabies()
+
 
 ###################################################
 
@@ -101,65 +106,51 @@ class Animal:
         """Calls the river animalDeath function and passes in the current object"""
         river.animalDeath(self)
 
-    def __availableCoords(self, river):
-        orignial = [(self.x - 1, self.y), (self.x + 1, self.y), (self.x, self.y - 1), (self.x, self.y + 1), (self.x - 1, self.y - 1), (self.x + 1, self.y + 1), (self.x - 1, self.y + 1), (self.x + 1, self.y - 1)]
-        available = []
-        for coords in orignial:
-            try:
-                if coords[0] < 0 or coords[0] > river.size - 1:
-                    continue
-                elif coords[1] < 0 or coords[1] > river.size - 1:
-                    continue
-
-                available.append(coords)
-
-            except IndexError:
-                continue
-        
-        return available
-    
     def move(self, river):
         """Move the current animal to a new position"""
-        x, y = choice(self.__availableCoords(river))
+        dx, dy = randint(-1, 1), randint(-1, 1)
+        while dx+self.x < 0 or dx+self.x >= river.size:
+            dx = randint(-1, 1)
 
-        if river[y][x] == '🟦':
-            river.redraw(self, self.x, self.y, (x, y))
+        while dy+self.y < 0 or dy+self.y >= river.size:
+            dy = randint(-1, 1)
 
-        elif river[y][x].icon == self.icon and river[self.y][self.x] is self:
-            self.collision(river, (x, y), self.icon)
+        if river[dy+self.y][dx+self.x] == '🟦':
+            river.redraw(self, (dx+self.x, dy+self.y))
 
-        elif river[y][x].icon == self.icon and river[self.y][self.x] is not self:
-            self.collision(river, (x, y), '🐻🐟')
+        elif type(river[dy+self.y][dx+self.x]) == type(self):
+            print(f"⚠️ ⚠️ ⚠️  Collision {river[dy+self.y][dx+self.x].icon}  {self.icon}")
+            self.collision(river, river[dy+self.y][dx+self.x], self.icon)
 
-    #TODO FINISH BEAR AND FISH INTERACTION
-    def collision(self, river, otherCoords, mode):
+        elif type(river[dy+self.y][dx+self.x]) != type(self):
+            print(f"⚠️ ⚠️ ⚠️  Collision {river[dy+self.y][dx+self.x].icon}  {self.icon}")
+            self.collision(river, river[dy+self.y][dx+self.x], '🐻🐟')
+
+    # TODO FINISH BEAR AND FISH INTERACTION
+    def collision(self, river, other, mode):
         """Detect collision between Bears and Fish and same animals"""
-        if mode == '🐻':
-            bearObjs = []
-            for pair in [(self.y, self.x), (otherCoords[1], otherCoords[0])]:
-                bearObj = [i for i in river.animals if i is river[pair[0]][pair[1]]][-1]
-                bearObjs.append(bearObj)
+        global x, y
 
-            babyCoords1 = self.__availableCoords(river)
-            babyCoords1.extend(bearObjs[1].__availableCoords(river))
-            babyCoords = choice(list(set(babyCoords1)))
-
-            river.addBaby(Bear(babyCoords[0], babyCoords[1], bearObjs[0].maxLives))
-
-        elif mode == '🐟':
-            fishObjs = []
-            for pair in [(self.y, self.x), (otherCoords[1], otherCoords[0])]:
-                fishObj = [i for i in river.animals if i is river[pair[0]][pair[1]]][-1]
-                fishObjs.append(fishObj)
-
-            babyCoords1 = self.__availableCoords(river)
-            babyCoords1.extend(fishObjs[1].__availableCoords(river))
-            babyCoords = choice(list(set(babyCoords1)))
-
-            river.addBaby(Fish(babyCoords[0], babyCoords[1]))
-
+        if self.icon != '🐻':
+            bear, fish = other, self
         else:
-            ...
+            bear, fish = self, other
+
+        if len(mode) == 1:
+            x, y = randint(0, river.size-1), randint(0, river.size-1)
+            while river[y][x] != '🟦':
+                x, y = randint(0, river.size - 1), randint(0, river.size - 1)
+
+        if mode == '🐻':
+            river.addBaby(Bear(x, y, bear.maxLives))
+            bear.starve(river)
+            print("New baby bear! 🐻")
+        elif mode == '🐟':
+            river.addBaby(Fish(x, y))
+            print("New baby fish! 🐟")
+        else:
+            river.redraw(bear, (fish.x, fish.y))
+            bear.consume(fish, river)
 
 
 ###################################################
@@ -192,6 +183,7 @@ class Bear(Animal):
         self.lives = self.maxLives
         self.eatenToday = True
         fish.death(river)
+
 
 ###################################################
 
