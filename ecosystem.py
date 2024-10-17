@@ -1,6 +1,4 @@
-from random import randint, choice
-import os
-
+from random import randint
 
 class River:
 
@@ -38,7 +36,7 @@ class River:
                 x, y = randint(0, self.size - 1), randint(0, self.size - 1)
 
             used.append((x, y))
-            bear = Bear(x, y, 5)
+            bear = Bear(x, y, 3)
             self.river[y][x] = bear
             self.animals.append(bear)
 
@@ -66,29 +64,43 @@ class River:
         for baby in self.__pendingBabies:
             self.animals.append(baby)
             self.river[baby.y][baby.x] = baby
+        self.__pendingBabies = []
 
-        self.population = len(self.animals)
-
-    ################################################################################################## TODO FISH NOT IN THE ANIMALS LIST????
     def animalDeath(self, animal):
         """Kills and removes and animals from the river"""
-        self.animals.remove(animal)
-        self.population = len(self.animals)
-        print(f"☠️ ☠️ ☠️  A {str(animal)}  has died")
+        if animal in self.animals:
+            self.animals.remove(animal)
+            self.redraw(animal, (animal.x, animal.y))
+            #print(f"☠️ ☠️ ☠️  A {str(animal)}  has died")
 
     def redraw(self, animal, new):
         """Redraws the river to the correct display"""
-        self.river[animal.y][animal.x] = '🟦'
         self.river[new[1]][new[0]] = animal
+        self.river[animal.y][animal.x] = '🟦'
 
     def newDay(self):
         """Main simulation functionality"""
-        for animal in self.animals:
+        animals = self.animals[:]
+        for animal in animals:
             animal.move(self)
 
-            if animal.icon == '🐻':
+            if type(animal) == Bear:
                 animal.eatenToday = False
+
+            animal.timesBred += 1
+            if animal.timesBred == 5 and type(animal) == Fish:
+                self.animalDeath(animal)
+            if animal.timesBred == 2 and type(animal) == Bear:
+                self.animalDeath(animal)
+
         self.placeBabies()
+        self.animals = [self.river[i][j] for i in range(self.size) for j in range(self.size) if self.river[i][j] in self.animals]
+        self.population = len(self.animals)
+
+        for i in range(len(self.river)):
+            for j in range(len(self.river[i])):
+                if self.river[i][j] not in self.animals:
+                    self.river[i][j] = '🟦'
 
 
 ###################################################
@@ -109,24 +121,20 @@ class Animal:
     def move(self, river):
         """Move the current animal to a new position"""
         dx, dy = randint(-1, 1), randint(-1, 1)
-        while dx+self.x < 0 or dx+self.x >= river.size:
-            dx = randint(-1, 1)
-
-        while dy+self.y < 0 or dy+self.y >= river.size:
-            dy = randint(-1, 1)
+        while (dx+self.x < 0 or dx+self.x >= river.size) or (dy+self.y < 0 or dy+self.y >= river.size):
+            dx, dy = randint(-1, 1), randint(-1, 1)
 
         if river[dy+self.y][dx+self.x] == '🟦':
             river.redraw(self, (dx+self.x, dy+self.y))
 
         elif type(river[dy+self.y][dx+self.x]) == type(self):
-            print(f"⚠️ ⚠️ ⚠️  Collision {river[dy+self.y][dx+self.x].icon}  {self.icon}")
+            #print(f"⚠️ ⚠️ ⚠️  Collision {river[dy+self.y][dx+self.x].icon}  {self.icon}")
             self.collision(river, river[dy+self.y][dx+self.x], self.icon)
 
         elif type(river[dy+self.y][dx+self.x]) != type(self):
-            print(f"⚠️ ⚠️ ⚠️  Collision {river[dy+self.y][dx+self.x].icon}  {self.icon}")
+            #print(f"⚠️ ⚠️ ⚠️  Collision {river[dy+self.y][dx+self.x].icon}  {self.icon}")
             self.collision(river, river[dy+self.y][dx+self.x], '🐻🐟')
 
-    # TODO FINISH BEAR AND FISH INTERACTION
     def collision(self, river, other, mode):
         """Detect collision between Bears and Fish and same animals"""
         global x, y
@@ -144,13 +152,13 @@ class Animal:
         if mode == '🐻':
             river.addBaby(Bear(x, y, bear.maxLives))
             bear.starve(river)
-            print("New baby bear! 🐻")
+            #print("New baby bear! 🐻")
         elif mode == '🐟':
             river.addBaby(Fish(x, y))
-            print("New baby fish! 🐟")
+            #print("New baby fish! 🐟")
         else:
-            river.redraw(bear, (fish.x, fish.y))
             bear.consume(fish, river)
+            river.redraw(bear, (fish.x, fish.y))
 
 
 ###################################################
@@ -165,6 +173,7 @@ class Bear(Animal):
         self.eatenToday = False
         self.maxLives = maxLives
         self.lives = self.maxLives
+        self.timesBred = 0
 
     def __str__(self):
         """Print the bear icon"""
@@ -193,6 +202,7 @@ class Fish(Animal):
         """Fish Constructor"""
         super().__init__(x, y)
         self.icon = '🐟'
+        self.timesBred = 0
 
     def __str__(self):
         """Print the fish icon"""
